@@ -2,9 +2,9 @@
 页构建器 — 将 LayoutElement 渲染到 reportlab Canvas 上。
 """
 
-from .layout_calculator import PageLayout, LayoutElement
-from .font_manager import FontManager
-from .._constants import wrap_text_to_width, PAGE_MARGIN_X, PAGE_MARGIN_Y
+from PDFPaperTranslator.pdf_reconstructor.layout_calculator import PageLayout, LayoutElement
+from PDFPaperTranslator.pdf_reconstructor.font_manager import FontManager
+from PDFPaperTranslator._constants import wrap_text_to_width, PAGE_MARGIN_X, PAGE_MARGIN_Y
 
 
 def build_page(

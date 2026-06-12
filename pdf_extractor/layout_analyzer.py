@@ -4,11 +4,11 @@
 
 import re
 
-from .._constants import (
+from PDFPaperTranslator._constants import (
     REFERENCE_HEADER_PATTERN,
     REFERENCE_ENTRY_BRACKET_PATTERN, REFERENCE_ENTRY_CONTENT_PATTERN,
 )
-from .text_extractor import TextBlock
+from PDFPaperTranslator.pdf_extractor.text_extractor import TextBlock
 
 
 def classify_block(block: TextBlock) -> str:

@@ -7,7 +7,7 @@ import json
 import time
 import requests
 
-from .._constants import DEEPSEEK_CHAT_URL, MODEL_DEFAULT
+from PDFPaperTranslator._constants import DEEPSEEK_CHAT_URL, MODEL_DEFAULT
 
 
 class DebugLogger:

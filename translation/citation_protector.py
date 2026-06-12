@@ -6,7 +6,7 @@ Citation Protector — 交叉引用占位符保护模块。
 引用格式在翻译后保持完整。
 
 用法:
-    from .citation_protector import (
+    from PDFPaperTranslator.translation.citation_protector import (
         build_citation_map, apply_placeholders,
         restore_citations, needs_protection,
     )
@@ -21,7 +21,7 @@ Citation Protector — 交叉引用占位符保护模块。
 import re
 from typing import Optional
 
-from .._constants import CITATION_PLACEHOLDER_FMT, CITATION_PATTERNS
+from PDFPaperTranslator._constants import CITATION_PLACEHOLDER_FMT, CITATION_PATTERNS
 
 
 # 模块加载时预编译正则，复用性能

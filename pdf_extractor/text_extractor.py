@@ -8,7 +8,7 @@ from typing import Optional
 
 import fitz  # PyMuPDF
 
-from .._constants import MIN_BLOCK_WIDTH, MIN_BLOCK_HEIGHT
+from PDFPaperTranslator._constants import MIN_BLOCK_WIDTH, MIN_BLOCK_HEIGHT
 
 
 @dataclass

@@ -6,7 +6,7 @@
 import re
 from dataclasses import dataclass, field
 
-from .text_extractor import TextBlock
+from PDFPaperTranslator.pdf_extractor.text_extractor import TextBlock
 
 
 @dataclass

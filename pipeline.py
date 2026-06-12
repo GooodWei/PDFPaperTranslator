@@ -9,15 +9,15 @@ import tempfile
 
 import fitz  # PyMuPDF
 
-from ._constants import SKIP_TRANSLATION_TYPES, rects_overlap
-from .pdf_extractor.document import open_pdf
-from .pdf_extractor.text_extractor import extract_text_blocks, TextBlock
-from .pdf_extractor.image_extractor import extract_images, ImageBlock
-from .pdf_extractor.table_extractor import detect_tables_on_page
-from .pdf_extractor.block_grouper import group_all_pages
-from .translation.batch_engine import translate_document, TextUnit
-from .pdf_reconstructor.font_manager import FontManager
-from .pdf_reconstructor.pdf_writer import create_translated_pdf
+from PDFPaperTranslator._constants import SKIP_TRANSLATION_TYPES, rects_overlap
+from PDFPaperTranslator.pdf_extractor.document import open_pdf
+from PDFPaperTranslator.pdf_extractor.text_extractor import extract_text_blocks, TextBlock
+from PDFPaperTranslator.pdf_extractor.image_extractor import extract_images, ImageBlock
+from PDFPaperTranslator.pdf_extractor.table_extractor import detect_tables_on_page
+from PDFPaperTranslator.pdf_extractor.block_grouper import group_all_pages
+from PDFPaperTranslator.translation.batch_engine import translate_document, TextUnit
+from PDFPaperTranslator.pdf_reconstructor.font_manager import FontManager
+from PDFPaperTranslator.pdf_reconstructor.pdf_writer import create_translated_pdf
 
 
 def run_translation_pipeline(

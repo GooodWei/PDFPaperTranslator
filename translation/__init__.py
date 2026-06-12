@@ -3,11 +3,11 @@
 移植自 AINovelTranslator，适配学术论文翻译。
 """
 
-from .api_client import PaperTranslator
-from .batch_engine import translate_document, TextUnit
-from .prompt_builder import build_batch_system_prompt, build_user_message
-from .response_parser import parse_response
-from .quality import source_lang_ratio
+from PDFPaperTranslator.translation.api_client import PaperTranslator
+from PDFPaperTranslator.translation.batch_engine import translate_document, TextUnit
+from PDFPaperTranslator.translation.prompt_builder import build_batch_system_prompt, build_user_message
+from PDFPaperTranslator.translation.response_parser import parse_response
+from PDFPaperTranslator.translation.quality import source_lang_ratio
 
 __all__ = [
     "PaperTranslator",

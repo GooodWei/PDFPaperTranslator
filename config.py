@@ -7,7 +7,7 @@ import json
 import os
 import sys
 
-from ._constants import APIKEY_FILE, CONFIG_FILE, MODEL_DEFAULT, MODEL_OPTIONS
+from PDFPaperTranslator._constants import APIKEY_FILE, CONFIG_FILE, MODEL_DEFAULT, MODEL_OPTIONS
 
 
 def load_config() -> dict:

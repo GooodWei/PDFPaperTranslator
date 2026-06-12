@@ -9,21 +9,21 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
-from .._constants import (
+from PDFPaperTranslator._constants import (
     BATCH_CHAR_LIMIT, CONTEXT_COUNT, MAX_BATCHES,
     MAX_SEGMENTS_PER_BATCH,
     API_RATE_LIMIT_DELAY, RETRY_THRESHOLD, RETRY_SUCCESS_THRESHOLD,
     DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, MODEL_DEFAULT,
     SKIP_TRANSLATION_TYPES,
 )
-from .api_client import PaperTranslator, DebugLogger
-from .citation_protector import (
+from PDFPaperTranslator.translation.api_client import PaperTranslator, DebugLogger
+from PDFPaperTranslator.translation.citation_protector import (
     build_citation_map, apply_placeholders, restore_citations, needs_protection,
 )
-from .prompt_builder import build_batch_system_prompt, build_user_message
-from .response_parser import parse_response
-from .quality import source_lang_ratio
-from .term_dict import TermDictionary
+from PDFPaperTranslator.translation.prompt_builder import build_batch_system_prompt, build_user_message
+from PDFPaperTranslator.translation.response_parser import parse_response
+from PDFPaperTranslator.translation.quality import source_lang_ratio
+from PDFPaperTranslator.translation.term_dict import TermDictionary
 
 
 @dataclass

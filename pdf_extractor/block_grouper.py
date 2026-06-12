@@ -4,12 +4,12 @@
 
 import re
 
-from .._constants import (
+from PDFPaperTranslator._constants import (
     IMAGE_CAPTION_NEARBY, STOP_REFERENCE_SECTION_PATTERN,
     REFERENCE_POSITION_RATIO, REFERENCE_MIN_CONSECUTIVE,
     COL_GAP_RATIO, COL_WIDTH_RATIO,
 )
-from .layout_analyzer import (
+from PDFPaperTranslator.pdf_extractor.layout_analyzer import (
     classify_block, is_reference_header, is_likely_reference_entry,
 )
 
