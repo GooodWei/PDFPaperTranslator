@@ -25,7 +25,7 @@
 
 ## 概述
 
-> ⚠️ **本程序仅支持 DeepSeek API**（`https://api.deepseek.com/chat/completions`），请在 [platform.deepseek.com](https://platform.deepseek.com) 获取 API Key 后填入 `apikey.txt`。不支持 OpenAI / Claude / Gemini 等其他 API。
+> ⚠️ **本程序目前仅支持 DeepSeek API**（`https://api.deepseek.com/chat/completions`），请在 [platform.deepseek.com](https://platform.deepseek.com) 获取 API Key 后填入 `apikey.txt`。不支持 OpenAI / Claude / Gemini 等其他 API。
 
 PDFPaperTranslator 将英文 PDF 学术论文翻译为中文，**保留图片、表格和页面排版**。从 PDF 中提取带位置坐标的文本块，通过 DeepSeek API 批量翻译，并用翻译后的文本在原始位置重建新 PDF。
 
