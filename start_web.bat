@@ -1,5 +1,5 @@
 @echo off
-chcp 65001 > NUL
+chcp 65001 > NUL 2>&1
 cd /d "%~dp0"
 
 echo.
@@ -8,44 +8,76 @@ echo   PDFPaperTranslator - Web Server
 echo ==============================================
 echo.
 
-REM ---- 自动检测 Python ----
+REM ---- Auto-detect Python ----
 set PYTHON=
-where python > NUL 2>&1 && set PYTHON=python
-where py > NUL 2>&1 && if "%PYTHON%"=="" set PYTHON=py
-where python3 > NUL 2>&1 && if "%PYTHON%"=="" set PYTHON=python3
-if "%PYTHON%"=="" (
-    echo [ERROR] Python not found! Please install Python 3.10+
-    pause
-    exit /b 1
+
+REM Try python first
+where python > NUL 2>&1
+if %errorlevel% equ 0 (
+    set PYTHON=python
+    goto :python_found
 )
 
-REM ---- 自动创建虚拟环境 ----
+REM Try py
+where py > NUL 2>&1
+if %errorlevel% equ 0 (
+    set PYTHON=py
+    goto :python_found
+)
+
+REM Try python3
+where python3 > NUL 2>&1
+if %errorlevel% equ 0 (
+    set PYTHON=python3
+    goto :python_found
+)
+
+echo [ERROR] Python not found! Please install Python 3.10+
+echo [ERROR] Make sure "Add Python to PATH" is checked during installation.
+pause
+exit /b 1
+
+:python_found
+echo [INFO] Using Python: %PYTHON%
+
+REM ---- Auto-create virtual environment ----
 if not exist ".venv\Scripts\python.exe" (
     echo [INFO] Creating virtual environment...
     %PYTHON% -m venv .venv
     if errorlevel 1 (
         echo [ERROR] Failed to create virtual environment.
+        echo [ERROR] If using Microsoft Store Python, install from python.org instead.
         pause
         exit /b 1
     )
+    echo [INFO] Virtual environment created.
 )
 
-REM ---- 激活虚拟环境 ----
-call ".venv\Scripts\activate.bat"
+REM ---- Activate virtual environment ----
+if exist ".venv\Scripts\activate.bat" (
+    call ".venv\Scripts\activate.bat"
+) else (
+    echo [ERROR] Virtual environment activate.bat not found.
+    echo [ERROR] Try deleting .venv folder and run again.
+    pause
+    exit /b 1
+)
 
-REM ---- 自动安装依赖 ----
+REM ---- Auto-install dependencies ----
 if not exist ".venv\.deps_installed" (
     echo [INFO] Installing dependencies...
     pip install -r requirements.txt -q
     if errorlevel 1 (
         echo [ERROR] Failed to install dependencies.
+        echo [ERROR] Check your network connection and try again.
         pause
         exit /b 1
     )
     type nul > ".venv\.deps_installed"
-    echo [INFO] Dependencies installed.
+    echo [INFO] Dependencies installed successfully.
 )
 
+echo.
 echo [INFO] Starting web server at http://127.0.0.1:5000
 echo [INFO] Press Ctrl+C to stop.
 echo.
