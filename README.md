@@ -138,7 +138,7 @@ python web_server.py --port 8080   # 自定义端口
 - 模型：`config.json` — `"deepseek-v4-flash"` 或 `"deepseek-v4-pro"`
 - 优先级：命令行 > 配置文件 > 交互输入
 
-## 已知限制
+## 已知限制(大部分可以用人工标注模式绕过)
 
 | 限制 | 说明 |
 |------|------|
@@ -154,15 +154,17 @@ python web_server.py --port 8080   # 自定义端口
 ## Token 消耗
 
 | 指标 | 每 1 万输入字符 | 说明 |
-|------|:-----------:|------|
-| 输入 token | ~4,000 | 系统提示词 + 用户消息 |
-| 输出 token | ~6,500 | 翻译文本 |
-| 总 token | ~10,500 | 输入:输出 ≈ 1:1.6 |
-| 缓存命中率 | ~35-40% | 系统提示词全批次相同 |
+|------|:---------:|------|
+| 输入 token |  ~4,000   | 系统提示词 + 用户消息 |
+| 输出 token |  ~6,500   | 翻译文本 |
+| 总 token |  ~10,500  | 输入:输出 ≈ 1:1.6 |
+| 缓存命中率 |  ~55-70%  | 系统提示词全批次相同 |
 
 ## 界面截图
 
 ![主页面截图](docs/screenshot_main.png)
+
+![人工标注截图](docs/screenshot_manual.png)
 
 </details>
 
@@ -234,15 +236,17 @@ Scanned PDFs, encrypted PDFs, 3-column layouts, non-EN/ZH captions, missing CJK 
 ## Token Consumption
 
 | Metric | Per 10K input chars |
-|--------|:-----------:|
-| Input tokens | ~4,000 |
-| Output tokens | ~6,500 |
-| Total tokens | ~10,500 |
-| Cache hit rate | ~35-40% |
+|--------|:-------------------:|
+| Input tokens |       ~4,000        |
+| Output tokens |       ~6,500        |
+| Total tokens |       ~10,500       |
+| Cache hit rate |       ~55-70%       |
 
 <a name="screenshot-en"></a>
 ## Screenshot
 
 ![Main Page Screenshot](docs/screenshot_main.png)
+
+![Manual Annotation Screenshot](docs/screenshot_manual.png)
 
 </details>
