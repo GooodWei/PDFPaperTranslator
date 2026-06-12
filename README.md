@@ -125,10 +125,13 @@ python -m PDFPaperTranslator --pdf paper.pdf --dry-run        # 仅提取查看
 python -m PDFPaperTranslator                                  # 交互模式
 ```
 
-### Web 服务器
+### Web 服务器（推荐）
 ```bash
-cd PDFPaperTranslator
-python web_server.py               # 启动（默认端口 5000）
+# 双击启动（推荐）
+start_web.bat
+
+# 或命令行启动
+python web_server.py               # 默认端口 5000
 python web_server.py --port 8080   # 自定义端口
 ```
 浏览器打开 `http://127.0.0.1:5000`，人工标注模式点击 🎯 按钮或访问 `/annotate`。
@@ -221,8 +224,9 @@ PDFPaperTranslator translates English academic PDFs to Chinese while **preservin
 
 ```bash
 cd PDFPaperTranslator
-python -m PDFPaperTranslator --pdf paper.pdf           # Translate
-python web_server.py                                   # Web server (port 5000)
+python -m PDFPaperTranslator --pdf paper.pdf           # CLI translate
+start_web.bat                                          # Web server (recommended)
+python web_server.py --port 8080                       # Custom port
 ```
 
 Configuration: `apikey.txt` (API key), `config.json` (model selection).
