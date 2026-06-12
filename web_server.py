@@ -25,11 +25,16 @@ from typing import Optional
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
 
-# ---- 路径 ----
+# 直接执行 web_server.py 时需要父目录在 sys.path 中
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+if PARENT_DIR not in sys.path:
+    sys.path.insert(0, PARENT_DIR)
 
-import PDFPaperTranslator as ptt  # noqa: E402
+from PDFPaperTranslator import _constants as const
+from PDFPaperTranslator import config as cfg
+from PDFPaperTranslator.translation.api_client import DebugLogger
+from PDFPaperTranslator.translation.term_dict import merge_term_dicts
 
 # ---- 常量 ----
 UPLOAD_DIR = os.path.join(SCRIPT_DIR, "uploads")
@@ -101,7 +106,6 @@ class TranslationQueue:
         self._batch_terms[batch_id] = dict(initial_terms) if initial_terms else {}
 
         # 为该批次创建调试日志记录器
-        from PDFPaperTranslator.translation.api_client import DebugLogger
         batch_logger = DebugLogger()
         self._batch_debug_loggers[batch_id] = batch_logger
 
@@ -350,7 +354,7 @@ def index():
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """获取已保存的配置（API Key 脱敏）"""
-    config = ptt.config.load_config()
+    config = cfg.load_config()
     api_key = config.get("api_key") or ""
     klen = len(api_key)
     if klen > 8:
@@ -362,9 +366,9 @@ def get_config():
     else:
         masked = ""
 
-    model = config.get("model", ptt.MODEL_DEFAULT)
+    model = config.get("model", const.MODEL_DEFAULT)
     model_name = dict(
-        (v[0], v[1]) for v in ptt.MODEL_OPTIONS.values()
+        (v[0], v[1]) for v in const.MODEL_OPTIONS.values()
     ).get(model, model)
 
     return jsonify({
@@ -374,7 +378,7 @@ def get_config():
         "model_name": model_name,
         "model_options": [
             {"id": v[0], "name": v[1]}
-            for v in ptt.MODEL_OPTIONS.values()
+            for v in const.MODEL_OPTIONS.values()
         ],
     })
 
@@ -390,17 +394,17 @@ def save_config():
         return jsonify({"ok": False, "error": "没有需要保存的配置"}), 400
 
     if not api_key:
-        saved = ptt.config.load_config()
+        saved = cfg.load_config()
         api_key = saved.get("api_key") or ""
 
-    valid_models = [v[0] for v in ptt.MODEL_OPTIONS.values()]
+    valid_models = [v[0] for v in const.MODEL_OPTIONS.values()]
     if model and model not in valid_models:
         return jsonify({"ok": False, "error": f"无效的模型: {model}"}), 400
 
     if not model:
-        model = ptt.MODEL_DEFAULT
+        model = const.MODEL_DEFAULT
 
-    ptt.config.save_config(api_key, model)
+    cfg.save_config(api_key, model)
     return jsonify({"ok": True})
 
 
@@ -411,14 +415,14 @@ def save_config():
 @app.route("/api/translate", methods=["POST"])
 def start_translation():
     """接收一个或多个 PDF 文件，加入翻译队列，返回 batch_id"""
-    config = ptt.config.load_config()
+    config = cfg.load_config()
     api_key = config.get("api_key")
     if not api_key:
         return jsonify({"ok": False, "error": "请先在设置中配置 DeepSeek API Key"}), 400
 
-    model = config.get("model", ptt.MODEL_DEFAULT)
-    source_lang = request.form.get("source_lang", ptt.DEFAULT_SOURCE_LANG)
-    target_lang = request.form.get("target_lang", ptt.DEFAULT_TARGET_LANG)
+    model = config.get("model", const.MODEL_DEFAULT)
+    source_lang = request.form.get("source_lang", const.DEFAULT_SOURCE_LANG)
+    target_lang = request.form.get("target_lang", const.DEFAULT_TARGET_LANG)
 
     # 收集所有上传的文件
     uploaded = request.files.getlist("files")
@@ -608,7 +612,7 @@ def download_termdict(batch_id):
     import io
     from datetime import datetime
 
-    meta = dict(ptt.TERMDICT_META)
+    meta = dict(const.TERMDICT_META)
     meta["created"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     data = {"_meta": meta, "terms": terms}
     json_str = json.dumps(data, ensure_ascii=False, indent=2)
@@ -745,14 +749,14 @@ def page_preview(filename: str, page_num: int):
 @app.route("/api/annotated_translate", methods=["POST"])
 def annotated_translate():
     """接收单文件 + 标注 JSON，启动翻译作业"""
-    config = ptt.config.load_config()
+    config = cfg.load_config()
     api_key = config.get("api_key")
     if not api_key:
         return jsonify({"ok": False, "error": "请先配置 API Key"}), 400
 
-    model = config.get("model", ptt.MODEL_DEFAULT)
-    source_lang = request.form.get("source_lang", ptt.DEFAULT_SOURCE_LANG)
-    target_lang = request.form.get("target_lang", ptt.DEFAULT_TARGET_LANG)
+    model = config.get("model", const.MODEL_DEFAULT)
+    source_lang = request.form.get("source_lang", const.DEFAULT_SOURCE_LANG)
+    target_lang = request.form.get("target_lang", const.DEFAULT_TARGET_LANG)
 
     f = request.files.get("file")
     if not f or not f.filename:
