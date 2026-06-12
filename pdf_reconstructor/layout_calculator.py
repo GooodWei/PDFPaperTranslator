@@ -6,9 +6,9 @@
 import os
 from dataclasses import dataclass, field
 
-from PDFPaperTranslator.pdf_extractor.text_extractor import TextBlock
-from PDFPaperTranslator.pdf_extractor.image_extractor import ImageBlock
-from PDFPaperTranslator._constants import (
+from ..pdf_extractor.text_extractor import TextBlock
+from ..pdf_extractor.image_extractor import ImageBlock
+from .._constants import (
     rects_overlap, wrap_text_to_width, MIN_FONT_SIZE, MAX_FONT_SIZE,
     HEADING_MIN_FONT_SIZE, HEADING_SHRINK_FLOOR,
     MAX_IMG_W_RATIO, MAX_IMG_H_RATIO, FONT_SHRINK_STEP, HEADING_OVERFLOW_RATIO,

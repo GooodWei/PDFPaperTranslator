@@ -6,9 +6,9 @@ import argparse
 import os
 import sys
 
-from PDFPaperTranslator._constants import DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, MODEL_DEFAULT
-from PDFPaperTranslator.config import resolve_config, load_config
-from PDFPaperTranslator.pipeline import run_translation_pipeline
+from ._constants import DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, MODEL_DEFAULT
+from .config import resolve_config, load_config
+from .pipeline import run_translation_pipeline
 
 
 def main():

@@ -25,16 +25,19 @@ from typing import Optional
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
 
-# 直接执行 web_server.py 时需要父目录在 sys.path 中
+# 允许直接 python web_server.py 启动（设置包上下文以支持相对导入）
+import sys, os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(SCRIPT_DIR)
-if PARENT_DIR not in sys.path:
-    sys.path.insert(0, PARENT_DIR)
+if __name__ == '__main__' and __package__ is None:
+    if PARENT_DIR not in sys.path:
+        sys.path.insert(0, PARENT_DIR)
+    __package__ = 'PDFPaperTranslator'
 
-from PDFPaperTranslator import _constants as const
-from PDFPaperTranslator import config as cfg
-from PDFPaperTranslator.translation.api_client import DebugLogger
-from PDFPaperTranslator.translation.term_dict import merge_term_dicts
+from . import _constants as const
+from . import config as cfg
+from .translation.api_client import DebugLogger
+from .translation.term_dict import merge_term_dicts
 
 # ---- 常量 ----
 UPLOAD_DIR = os.path.join(SCRIPT_DIR, "uploads")
@@ -316,7 +319,7 @@ def _run_pdf_translation(input_path: str, output_path: str,
                          pages_to_skip: set = None,
                          page_annotations: dict = None) -> dict:
     """执行完整的 PDF 翻译流水线（委托共享模块）"""
-    from PDFPaperTranslator.pipeline import run_translation_pipeline
+    from .pipeline import run_translation_pipeline
 
     return run_translation_pipeline(
         pdf_path=input_path,

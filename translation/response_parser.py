@@ -6,8 +6,8 @@ Stage 4: 响应解析 — 拆分译文、提取新术语、清理混合输出。
 import re
 from dataclasses import dataclass
 
-from PDFPaperTranslator._constants import DICT_MARKER, LINE_BREAK_MARKER
-from PDFPaperTranslator.translation.quality import is_rare_term
+from .._constants import DICT_MARKER, LINE_BREAK_MARKER
+from .quality import is_rare_term
 
 
 @dataclass

@@ -5,12 +5,12 @@ PDF 写入器 — 组装所有页面，输出最终翻译 PDF。
 
 from reportlab.pdfgen import canvas
 
-from PDFPaperTranslator._constants import PAGE_MARGIN_X, PAGE_MARGIN_Y
-from PDFPaperTranslator.pdf_reconstructor.font_manager import FontManager
+from .._constants import PAGE_MARGIN_X, PAGE_MARGIN_Y
+from .font_manager import FontManager
 import fitz  # PyMuPDF
 
-from PDFPaperTranslator.pdf_reconstructor.layout_calculator import calculate_page_layout, detect_overlaps
-from PDFPaperTranslator.pdf_reconstructor.page_builder import build_page, build_page_overlay, build_page_overlay_single, build_page_overlay_regions
+from .layout_calculator import calculate_page_layout, detect_overlaps
+from .page_builder import build_page, build_page_overlay, build_page_overlay_single, build_page_overlay_regions
 
 
 def _redact_regions(c, abs_regions: list, page_w: float, page_h: float,

@@ -6,7 +6,7 @@ import os
 import platform
 import sys
 
-from PDFPaperTranslator._constants import FONTS_DIR, DEFAULT_FONT_NAME
+from .._constants import FONTS_DIR, DEFAULT_FONT_NAME
 
 
 class FontManager:
