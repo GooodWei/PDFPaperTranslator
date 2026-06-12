@@ -108,7 +108,7 @@ def run_translation_pipeline(
                         r["x1"] * pw, r["y1"] * ph, rorder)
                     region_blocks[rorder] = []
                 for tb in all_text:
-                    for ri, (rx0, ry0, rx1, ry1, rorder) in enumerate(abs_regions):
+                    for rorder, (rx0, ry0, rx1, ry1, _) in abs_regions.items():
                         if rects_overlap(tb.bbox, (rx0, ry0, rx1, ry1)):
                             region_blocks[rorder].append(tb)
                             break
