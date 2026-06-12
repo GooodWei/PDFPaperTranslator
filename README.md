@@ -25,6 +25,8 @@
 
 ## 概述
 
+> ⚠️ **本程序仅支持 DeepSeek API**（`https://api.deepseek.com/chat/completions`），请在 [platform.deepseek.com](https://platform.deepseek.com) 获取 API Key 后填入 `apikey.txt`。不支持 OpenAI / Claude / Gemini 等其他 API。
+
 PDFPaperTranslator 将英文 PDF 学术论文翻译为中文，**保留图片、表格和页面排版**。从 PDF 中提取带位置坐标的文本块，通过 DeepSeek API 批量翻译，并用翻译后的文本在原始位置重建新 PDF。
 
 **两种模式：**
@@ -189,6 +191,8 @@ python web_server.py --port 8080   # 自定义端口
 
 <a name="overview-en"></a>
 ## Overview
+
+> ⚠️ **DeepSeek API only.** This program exclusively uses the DeepSeek API (`https://api.deepseek.com/chat/completions`). Get your API key at [platform.deepseek.com](https://platform.deepseek.com) and save it to `apikey.txt`. OpenAI / Claude / Gemini and other APIs are NOT supported.
 
 PDFPaperTranslator translates English academic PDFs to Chinese while **preserving images, tables, and page layout**. It extracts text blocks with position coordinates from PDFs, translates them via the DeepSeek API, and reconstructs new PDFs with translated text in original positions.
 
