@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDFPaperTranslator — PDF 学术论文翻译</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --card: #16213e;
+    --border: #0f3460;
+    --primary: #e94560;
+    --primary-hover: #ff6b81;
+    --text: #eee;
+    --text-dim: #999;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --error: #e74c3c;
+    --log-bg: #0d1117;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    width: 100%;
+    max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* 头部 */
+  .header {
+    text-align: center;
+    padding: 16px 0 8px;
+  }
+  .header h1 {
+    font-size: 1.8rem;
+    color: var(--primary);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .header .subtitle {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .header .features {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+  }
+  .features span { display: flex; align-items: center; gap: 4px; }
+
+  /* 卡片 */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .card-header h2 { font-size: 1rem; font-weight: 600; }
+  .card-header .toggle { font-size: 0.8rem; color: var(--text-dim); transition: transform 0.2s; }
+  .card-body { margin-top: 14px; }
+  .card-body.hidden { display: none; }
+
+  /* 表单 */
+  .form-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .form-row label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    min-width: 54px;
+    white-space: nowrap;
+  }
+  input, select {
+    flex: 1;
+    min-width: 100px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); }
+  .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary:disabled { background: #555; cursor: not-allowed; }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+  .btn-dl {
+    display: inline-block;
+    padding: 5px 14px;
+    background: var(--success);
+    color: #fff;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: filter 0.2s;
+  }
+  .btn-dl:hover { filter: brightness(1.15); }
+
+  /* 上传区 */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 36px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--primary);
+    background: rgba(233, 69, 96, 0.05);
+  }
+  .drop-zone .icon { font-size: 2.4rem; margin-bottom: 8px; }
+  .drop-zone .main-text { font-size: 0.95rem; }
+  .drop-zone .sub-text { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; }
+  .drop-zone.has-files { border-color: var(--success); border-style: solid; }
+
+  /* 文件列表 */
+  .file-list { margin-top: 12px; }
+  .file-list .file-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 5px 12px;
+    margin: 3px 5px;
+    font-size: 0.82rem;
+  }
+  .file-tag .remove-btn {
+    cursor: pointer;
+    color: var(--text-dim);
+    font-weight: bold;
+    font-size: 1rem;
+    line-height: 1;
+  }
+  .file-tag .remove-btn:hover { color: var(--primary); }
+
+  /* 操作区 */
+  .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  .btn-start {
+    flex: 1;
+    padding: 12px;
+    font-size: 1.05rem;
+    border-radius: 8px;
+  }
+  .btn-clear {
+    padding: 12px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .btn-clear:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* 队列 */
+  .queue-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .queue-header h2 { font-size: 1rem; margin: 0; }
+  .queue-header .batch-status { font-size: 0.8rem; }
+
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.2s;
+  }
+  .queue-item:last-child { border-bottom: none; }
+  .queue-item.active { background: rgba(233, 69, 96, 0.06); }
+  .queue-item .job-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .job-icon.pending { background: #333; color: var(--text-dim); }
+  .job-icon.translating { background: var(--primary); color: #fff; animation: pulse 1.5s ease-in-out infinite; }
+  .job-icon.done { background: var(--success); color: #fff; }
+  .job-icon.error { background: var(--error); color: #fff; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .queue-item .job-info { flex: 1; min-width: 0; }
+  .job-info .job-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .job-info .job-status-text {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .job-info .job-status-text.active { color: var(--primary); }
+  .job-info .job-status-text.done { color: var(--success); }
+  .job-info .job-status-text.error { color: var(--error); }
+
+  .queue-item .job-actions { flex-shrink: 0; }
+
+  /* 进度条 */
+  .mini-progress {
+    height: 3px;
+    background: var(--bg);
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+    max-width: 300px;
+  }
+  .mini-progress-inner {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .mini-progress-inner.indeterminate {
+    width: 30%;
+    animation: indeterm 1.5s ease-in-out infinite;
+  }
+  @keyframes indeterm {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+
+  /* 日志区 */
+  .log-toggle {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 8px 20px;
+    user-select: none;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .log-toggle:hover { color: var(--text); }
+  .log-area {
+    background: var(--log-bg);
+    padding: 10px 20px;
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: "Cascadia Code", "Consolas", "Microsoft YaHei", monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  .log-area.hidden { display: none; }
+  .log-area .log-line { word-break: break-all; }
+  .log-line.term { color: #3498db; }
+  .log-line.warn { color: var(--warning); }
+  .log-line.err { color: var(--error); }
+  .log-line.ok { color: var(--success); }
+
+  /* 术语词典导入/下载 */
+  .term-import {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .term-import-label { color: var(--text-dim); white-space: nowrap; }
+  .term-import input[type="file"] { font-size: 0.75rem; padding: 4px; flex: 1; min-width: 0; }
+  .term-import-status { font-size: 0.75rem; }
+  .batch-download {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .batch-download .dl-row { margin-bottom: 8px; }
+
+  /* 跳过页面 */
+  .skip-pages-toggle { display: flex; align-items: center; }
+  .skip-pages-toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  /* 模态框 */
+  .modal { position: fixed; inset: 0; z-index: 999; display: flex; align-items: center; justify-content: center; }
+  .modal.hidden { display: none; }
+  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+  .modal-content { position: relative; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; max-height: 80vh; overflow-y: auto; }
+  .modal-content input[type="text"] { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 0.85rem; }
+  .modal-content input[type="text"]:focus { outline: none; border-color: var(--primary); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    z-index: 9999;
+    animation: toastIn 0.3s ease;
+    max-width: 90vw;
+  }
+  .toast.error { background: var(--error); color: #fff; }
+  .toast.success { background: var(--success); color: #fff; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- 头部 -->
+  <div class="header">
+    <h1>📄 PDFPaperTranslator</h1>
+    <p class="subtitle">基于 DeepSeek API 的 PDF 学术论文自动翻译工具 — 保留配图与版式</p>
+    <div class="features">
+      <span>📷 保留配图位置</span>
+      <span>📝 学术术语自动识别</span>
+      <span>📋 多文件队列翻译</span>
+      <span>📥 一键下载译文</span>
+    </div>
+  </div>
+
+  <!-- 设置面板 -->
+  <div class="card" id="settings-card">
+    <div class="card-header" onclick="toggleSettings()">
+      <h2>⚙ 设置</h2>
+      <span class="toggle" id="settings-toggle">▶</span>
+    </div>
+    <div class="card-body hidden" id="settings-body">
+      <div class="form-row" style="margin-bottom:10px">
+        <label>API Key</label>
+        <input type="password" id="api-key" placeholder="sk-..." style="flex:3">
+        <button class="btn btn-primary btn-sm" onclick="saveConfig()">保存</button>
+      </div>
+      <div class="form-row" style="margin-bottom:10px">
+        <label>模型</label>
+        <select id="model-select">
+          <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+          <option value="deepseek-v4-pro">DeepSeek V4 Pro</option>
+        </select>
+        <label>源语言</label>
+        <select id="source-lang">
+          <option value="en" selected>英语 (en)</option>
+          <option value="ja">日语 (ja)</option>
+          <option value="ko">韩语 (ko)</option>
+          <option value="zh">中文 (zh)</option>
+        </select>
+        <label>目标</label>
+        <select id="target-lang">
+          <option value="zh" selected>中文 (zh)</option>
+          <option value="en">英语 (en)</option>
+          <option value="ja">日语 (ja)</option>
+          <option value="ko">韩语 (ko)</option>
+        </select>
+      </div>
+      <p id="config-msg" style="margin-top:6px;font-size:0.8rem;color:var(--success)" class="hidden"></p>
+    </div>
+  </div>
+
+  <!-- 模式切换 -->
+  <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#1a1a3e 0%,#16213e 100%);border:1px solid #f39c12;border-radius:12px;padding:14px 20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <span style="font-size:1.05rem;font-weight:600">📦 批量翻译</span>
+        <span style="font-size:0.82rem;color:var(--text-dim);margin-left:8px">拖拽上传多篇 PDF，队列翻译</span>
+      </div>
+      <a href="/annotate" style="background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-size:0.95rem;font-weight:600;transition:all 0.2s"
+         onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        🎯 人工标注模式
+      </a>
+    </div>
+    <div style="font-size:0.78rem;color:var(--text-dim);margin-top:6px">逐页预览 · 框选翻译区域 · 精确控制排版 — 适合表格、图表密集的论文</div>
+  </div>
+
+  <!-- 上传区 -->
+  <div class="card" id="upload-card">
+    </div>
+    <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="选择 PDF 文件"
+         onclick="document.getElementById('file-input').click()"
+         onkeydown="if(event.key==='Enter'||event.key===' ') {event.preventDefault();document.getElementById('file-input').click()}">
+      <div class="icon">📄</div>
+      <div class="main-text" id="drop-text">拖拽 PDF 论文到此处（可多选）</div>
+      <div class="sub-text">或点击选择文件 · 支持批量上传 · 单文件最大 100MB</div>
+      <input type="file" id="file-input" accept=".pdf" multiple hidden onchange="handleFileSelect(event)">
+    </div>
+    <div class="file-list" id="file-tags"></div>
+    <!-- 术语词典导入 -->
+    <div class="term-import" id="term-import">
+      <span class="term-import-label">📖 导入术语词典 (可选，支持多文件)</span>
+      <input type="file" id="termdict-input" accept=".json" multiple onchange="handleTermdictSelect(event)">
+      <span class="term-import-status" id="term-import-status"></span>
+      <div class="term-import-detail" id="term-import-detail" style="display:none;margin-top:6px;font-size:0.78rem;color:var(--text-dim)"></div>
+    </div>
+    <!-- 跳过页面开关 -->
+    <div class="skip-pages-toggle" id="skip-pages-toggle-row" style="display:none;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--text-dim);cursor:pointer">
+        <input type="checkbox" id="skip-pages-checkbox" onchange="toggleSkipPages()">
+        <span>🔇 跳过指定页面（不翻译，保留原文）</span>
+      </label>
+      <button class="btn-clear" id="btn-skip-config" onclick="openSkipModal()" style="display:none;margin-left:12px;font-size:0.8rem">⚙ 配置跳页</button>
+    </div>
+    <!-- 跳页配置模态框 -->
+    <div class="modal hidden" id="skip-modal">
+      <div class="modal-overlay" onclick="closeSkipModal()"></div>
+      <div class="modal-content" style="max-width:560px">
+        <h3 style="margin:0 0 8px">⚙ 跳过页面配置</h3>
+        <p style="font-size:0.8rem;color:var(--text-dim);margin:0 0 16px">输入每份 PDF 要跳过的页码（从 1 开始），用逗号分隔，支持范围如 <code>3,5-8,12</code>。留空表示不跳过任何页。</p>
+        <div id="skip-file-list"></div>
+        <div style="margin-top:16px;text-align:right">
+          <button class="btn-clear" onclick="closeSkipModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveSkipConfig()" style="margin-left:8px">保存</button>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary btn-start" id="btn-start" disabled onclick="startTranslation()">
+        🚀 开始翻译
+      </button>
+      <button class="btn-clear" id="btn-clear" onclick="clearFiles()" style="display:none">清空</button>
+    </div>
+  </div>
+
+  <!-- 翻译队列 -->
+  <div class="queue-card hidden" id="queue-card">
+    <div class="queue-header">
+      <h2>📋 翻译队列</h2>
+      <span class="batch-status" id="batch-status"></span>
+    </div>
+    <div id="queue-list"></div>
+    <div class="log-toggle" id="log-toggle" onclick="toggleLog()" style="display:none">
+      📜 显示详细日志 ▾
+    </div>
+    <div class="log-area hidden" id="log-area"></div>
+    <div class="batch-download hidden" id="batch-download">
+      <div class="dl-row">
+        <a class="btn-dl" id="btn-zipdl" href="#" download style="font-size:0.95rem;padding:8px 24px">📦 一键下载全部译文 (ZIP)</a>
+      </div>
+      <div class="dl-row">
+        <a class="btn-dl" id="btn-termdl" href="#" download>📖 下载术语词典 (JSON)</a>
+        <span style="font-size:0.78rem;color:var(--text-dim);margin-left:8px">可导入到下次翻译中复用</span>
+      </div>
+      <div class="dl-row hidden" id="debug-dl-row">
+        <a class="btn-dl" id="btn-debugdl" href="#" download style="font-size:0.82rem;padding:5px 14px">🐛 下载调试日志 (debug.log)</a>
+        <span style="font-size:0.78rem;color:var(--text-dim);margin-left:8px">包含每次 API 请求/响应的完整内容与时间戳</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 全局状态
+// ============================================================
+let batchId = null;
+let es = null;
+let jobsMap = {};
+let showLog = false;
+
+// ============================================================
+// 初始化
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  setupDropZone();
+});
+
+// ============================================================
+// 设置面板
+// ============================================================
+function toggleSettings() {
+  const body = document.getElementById('settings-body');
+  const toggle = document.getElementById('settings-toggle');
+  body.classList.toggle('hidden');
+  toggle.textContent = body.classList.contains('hidden') ? '▶' : '▼';
+}
+
+function loadConfig() {
+  fetch('/api/config')
+    .then(r => r.json())
+    .then(data => {
+      if (data.has_api_key) {
+        document.getElementById('api-key').placeholder = data.api_key_masked;
+      }
+      const sel = document.getElementById('model-select');
+      sel.innerHTML = '';
+      (data.model_options || []).forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.id;
+        o.textContent = opt.name;
+        if (opt.id === data.model) o.selected = true;
+        sel.appendChild(o);
+      });
+    })
+    .catch(err => console.error('加载配置失败:', err));
+}
+
+function saveConfig() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  const model = document.getElementById('model-select').value;
+  const msg = document.getElementById('config-msg');
+  fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey, model: model }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        showCfgMsg('✅ 配置已保存', 'success');
+        document.getElementById('api-key').value = '';
+        document.getElementById('api-key').placeholder = '(已保存，直接输入可更新)';
+      } else {
+        showCfgMsg('❌ ' + (data.error || '保存失败'), 'error');
+      }
+    })
+    .catch(err => showCfgMsg('❌ 网络错误: ' + err.message, 'error'));
+}
+
+function showCfgMsg(text, type) {
+  const msg = document.getElementById('config-msg');
+  msg.textContent = text;
+  msg.classList.remove('hidden');
+  msg.style.color = type === 'error' ? 'var(--error)' : 'var(--success)';
+  setTimeout(() => msg.classList.add('hidden'), 3000);
+}
+
+// ============================================================
+// 文件选择
+// ============================================================
+function setupDropZone() {
+  const zone = document.getElementById('drop-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+  });
+}
+
+let _rawFiles = [];
+let _fileSkipMap = {};  // {filename: [1-based page numbers]}
+let _termdictFiles = [];
+
+function handleFileSelect(event) {
+  if (event.target.files.length > 0) addFiles(event.target.files);
+  event.target.value = '';
+}
+
+function renderFileTags() {
+  const container = document.getElementById('file-tags');
+  const zone = document.getElementById('drop-zone');
+  const dropText = document.getElementById('drop-text');
+  const btnStart = document.getElementById('btn-start');
+  const btnClear = document.getElementById('btn-clear');
+
+  if (_rawFiles.length === 0) {
+    container.innerHTML = '';
+    zone.classList.remove('has-files');
+    dropText.textContent = '拖拽 PDF 论文到此处（可多选）';
+    btnStart.disabled = true;
+    btnClear.style.display = 'none';
+    return;
+  }
+
+  zone.classList.add('has-files');
+  dropText.innerHTML = `已选择 <strong>${_rawFiles.length}</strong> 篇论文`;
+  btnStart.disabled = false;
+  btnClear.style.display = '';
+
+  container.innerHTML = _rawFiles.map((f, i) =>
+    `<span class="file-tag">
+      📄 ${escapeHtml(f.name)}
+      <span class="remove-btn" onclick="removeFile(${i})" title="移除">×</span>
+    </span>`
+  ).join('');
+  // 显示跳过页面开关
+  document.getElementById('skip-pages-toggle-row').style.display = '';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+let _toastCount = 0;
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'error');
+  t.textContent = msg;
+  t.style.top = (20 + _toastCount * 48) + 'px';
+  _toastCount++;
+  document.body.appendChild(t);
+  setTimeout(() => { t.remove(); _toastCount = Math.max(0, _toastCount - 1); }, 4000);
+}
+
+function addFiles(fileList) {
+  for (const f of fileList) {
+    const ext = '.' + f.name.split('.').pop().toLowerCase();
+    if (ext !== '.pdf') {
+      showToast('不支持的文件格式: ' + f.name + '，仅支持 PDF', 'error');
+      continue;
+    }
+    if (!_rawFiles.some(rf => rf.name === f.name && rf.size === f.size)) {
+      _rawFiles.push(f);
+    }
+  }
+  renderFileTags();
+}
+
+function removeFile(index) {
+  _rawFiles.splice(index, 1);
+  renderFileTags();
+}
+
+function clearFiles() {
+  _rawFiles = [];
+  _termdictFiles = [];
+  _fileSkipMap = {};
+  document.getElementById('termdict-input').value = '';
+  document.getElementById('term-import-status').textContent = '';
+  document.getElementById('term-import-detail').style.display = 'none';
+  document.getElementById('skip-pages-toggle-row').style.display = 'none';
+  document.getElementById('skip-pages-checkbox').checked = false;
+  document.getElementById('btn-skip-config').style.display = 'none';
+  renderFileTags();
+}
+
+// ---- 跳过页面功能 ----
+function toggleSkipPages() {
+  var checked = document.getElementById('skip-pages-checkbox').checked;
+  document.getElementById('btn-skip-config').style.display = checked ? '' : 'none';
+  if (checked) { openSkipModal(); }
+}
+
+function openSkipModal() {
+  var list = document.getElementById('skip-file-list');
+  list.innerHTML = _rawFiles.map(function(f, i) {
+    var saved = (_fileSkipMap[f.name] || []).join(',');
+    return '<div style="margin-bottom:10px"><div style="font-size:0.85rem;margin-bottom:3px">📄 ' +
+      escapeHtml(f.name) + '</div><input type="text" id="skip-input-' + i +
+      '" value="' + saved + '" placeholder="例: 3,5-8,12"></div>';
+  }).join('');
+  document.getElementById('skip-modal').classList.remove('hidden');
+}
+
+function closeSkipModal() {
+  document.getElementById('skip-modal').classList.add('hidden');
+}
+
+function saveSkipConfig() {
+  _rawFiles.forEach(function(f, i) {
+    var raw = document.getElementById('skip-input-' + i).value.trim();
+    if (raw) {
+      var pages = [];
+      raw.split(',').forEach(function(part) {
+        part = part.trim();
+        if (part.includes('-')) {
+          var r = part.split('-');
+          var s = parseInt(r[0]), e = parseInt(r[1]);
+          if (!isNaN(s) && !isNaN(e)) {
+            for (var p = Math.max(1, s); p <= e; p++) pages.push(p);
+          }
+        } else {
+          var n = parseInt(part);
+          if (!isNaN(n) && n >= 1) pages.push(n);
+        }
+      });
+      if (pages.length > 0) _fileSkipMap[f.name] = pages;
+      else delete _fileSkipMap[f.name];
+    } else {
+      delete _fileSkipMap[f.name];
+    }
+  });
+  closeSkipModal();
+  var total = Object.values(_fileSkipMap).reduce(function(a,b){return a+b.length;}, 0);
+  if (total > 0) showToast('已保存 ' + total + ' 个跳过页面', 'ok');
+}
+
+function handleTermdictSelect(event) {
+  const files = event.target.files;
+  if (files.length > 0) {
+    _termdictFiles = Array.from(files);
+    const names = _termdictFiles.map(function(f) { return f.name; }).join(', ');
+    document.getElementById('term-import-status').textContent = '✅ ' + files.length + ' 个词典: ' + names;
+    document.getElementById('term-import-status').style.color = 'var(--success)';
+    document.getElementById('term-import-detail').style.display = 'block';
+    document.getElementById('term-import-detail').textContent = '提交时将自动去重合并';
+  } else {
+    _termdictFiles = [];
+    document.getElementById('term-import-status').textContent = '';
+    document.getElementById('term-import-detail').style.display = 'none';
+  }
+}
+
+function startTranslation() {
+  if (_rawFiles.length === 0) return;
+
+  document.getElementById('queue-card').classList.remove('hidden');
+  document.getElementById('queue-list').innerHTML =
+    '<div style="padding:20px;text-align:center;color:var(--text-dim)">正在提交翻译任务...</div>';
+  document.getElementById('batch-status').textContent = '';
+  document.getElementById('batch-download').classList.add('hidden');
+  document.getElementById('log-area').innerHTML = '';
+  document.getElementById('log-area').classList.add('hidden');
+  document.getElementById('log-toggle').style.display = 'none';
+  showLog = false;
+  jobsMap = {};
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-start').textContent = '提交中...';
+  _doUpload();
+}
+
+function _doUpload() {
+  const formData = new FormData();
+  for (const f of _rawFiles) {
+    formData.append('files', f);
+  }
+  _termdictFiles.forEach(function(f) {
+    formData.append('termdict', f);
+  });
+  formData.append('source_lang', document.getElementById('source-lang').value);
+  formData.append('target_lang', document.getElementById('target-lang').value);
+  // 跳过页面数据
+  if (document.getElementById('skip-pages-checkbox').checked) {
+    formData.append('pages_to_skip', JSON.stringify(_fileSkipMap));
+  }
+
+  fetch('/api/translate', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) {
+        showToast('提交失败: ' + (data.error || '未知错误'), 'error');
+        resetUI();
+        return;
+      }
+      batchId = data.batch_id;
+
+      if (data.termdict_info) {
+        if (data.termdict_info.error) {
+          appendLog('⚠ 术语词典: ' + data.termdict_info.error, 'warn');
+          document.getElementById('term-import-status').textContent = '❌ 合并失败';
+          document.getElementById('term-import-status').style.color = 'var(--error)';
+        } else {
+          var ti = data.termdict_info;
+          var msg = '📖 术语词典: ' + ti.files + ' 个文件 → ' + ti.unique_terms + ' 个唯一术语';
+          if (ti.conflicts > 0) msg += ', ' + ti.conflicts + ' 个冲突已自动解决';
+          if (ti.failed > 0) msg += ' (' + ti.failed + ' 个解析失败)';
+          appendLog(msg, 'term');
+          document.getElementById('term-import-status').textContent = '✅ 已合并 ' + ti.unique_terms + ' 个术语';
+          document.getElementById('term-import-status').style.color = 'var(--success)';
+          var detail = '来源: ' + ti.parsed + ' 个有效文件';
+          if (ti.raw_terms > ti.unique_terms) detail += ', 自动去重: ' + (ti.raw_terms - ti.unique_terms) + ' 个重复条目';
+          if (ti.conflicts > 0) detail += ', 冲突: ' + ti.conflicts + ' (保留已有译法)';
+          document.getElementById('term-import-detail').textContent = detail;
+        }
+      }
+      if (data.warnings) {
+        data.warnings.forEach(function(w) {
+        });
+      }
+
+      document.getElementById('btn-start').textContent = '翻译中...';
+      document.getElementById('upload-card').style.opacity = '0.6';
+      document.getElementById('upload-card').style.pointerEvents = 'none';
+      connectProgress(batchId);
+    })
+    .catch(err => {
+      showToast('请求失败: ' + err.message, 'error');
+      resetUI();
+    });
+}
+
+function resetUI() {
+  document.getElementById('btn-start').textContent = '🚀 开始翻译';
+  document.getElementById('btn-start').disabled = _rawFiles.length === 0;
+  document.getElementById('upload-card').style.opacity = '';
+  document.getElementById('upload-card').style.pointerEvents = '';
+}
+
+function connectProgress(bid) {
+  if (es) es.close();
+  es = new EventSource('/api/progress/' + bid);
+
+  es.onmessage = function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case 'batch_start':
+          handleBatchStart(data);
+          break;
+        case 'job_start':
+          handleJobStart(data);
+          break;
+        case 'job_progress':
+          handleJobProgress(data);
+          break;
+        case 'job_done':
+          handleJobDone(data);
+          break;
+        case 'job_error':
+          handleJobError(data);
+          break;
+        case 'batch_done':
+          handleBatchDone(data);
+          break;
+        case 'heartbeat':
+          break;
+      }
+    } catch(e) { console.error('SSE message error:', e); }
+  };
+
+  es.onerror = function() {
+    if (es && es.readyState === EventSource.CLOSED) {
+      es = null;
+      resetUI();
+    }
+  };
+}
+
+function handleBatchStart(data) {
+  (data.jobs || []).forEach(j => {
+    jobsMap[j.job_id] = {
+      filename: j.filename,
+      status: 'pending',
+      output_filename: j.output_filename,
+      error: null,
+    };
+  });
+  document.getElementById('batch-status').textContent =
+    `0 / ${data.total} 完成`;
+  renderQueue();
+}
+
+function handleJobStart(data) {
+  if (jobsMap[data.job_id]) {
+    jobsMap[data.job_id].status = 'translating';
+  }
+  updateBatchStatus();
+  renderQueue();
+  appendLog(`▶ 开始翻译: ${data.filename}`, '');
+}
+
+function handleJobProgress(data) {
+  // 区分阶段
+  let cls = '';
+  if (data.msg.includes('阶段1') || data.msg.includes('提取')) cls = '';
+  else if (data.msg.includes('阶段2') || data.msg.includes('版式')) cls = '';
+  else if (data.msg.includes('阶段3') || data.msg.includes('翻译进度')) cls = 'term';
+  else if (data.msg.includes('阶段4') || data.msg.includes('重建')) cls = '';
+  else if (data.msg.includes('完成') || data.msg.includes('译文')) cls = 'ok';
+  else if (data.msg.includes('术语')) cls = 'term';
+  else if (data.msg.includes('失败') || data.msg.includes('错误')) cls = 'err';
+  appendLog(data.msg, cls);
+}
+
+function handleJobDone(data) {
+  if (jobsMap[data.job_id]) {
+    jobsMap[data.job_id].status = 'done';
+    jobsMap[data.job_id].output_filename = data.output_filename;
+  }
+  updateBatchStatus();
+  renderQueue();
+  appendLog(`✅ 完成: ${data.filename}`, 'ok');
+}
+
+function handleJobError(data) {
+  if (jobsMap[data.job_id]) {
+    jobsMap[data.job_id].status = 'error';
+    jobsMap[data.job_id].error = data.error;
+  }
+  updateBatchStatus();
+  renderQueue();
+  appendLog(`❌ 失败: ${data.filename} — ${data.error}`, 'err');
+}
+
+function handleBatchDone(data) {
+  document.getElementById('batch-status').textContent = '✅ 全部完成';
+  resetUI();
+
+  const batchDl = document.getElementById('batch-download');
+  const btnZip = document.getElementById('btn-zipdl');
+  btnZip.href = '/api/download_batch/' + batchId;
+  batchDl.classList.remove('hidden');
+
+  const termCount = data.term_count || 0;
+  const btnTerm = document.getElementById('btn-termdl');
+  btnTerm.href = '/api/termdict/' + batchId;
+  btnTerm.textContent = `📖 下载术语词典 (${termCount} 词, JSON)`;
+  btnTerm.style.display = '';
+
+  // 调试日志下载
+  const debugRow = document.getElementById('debug-dl-row');
+  const btnDebug = document.getElementById('btn-debugdl');
+  if (data.has_debug_log) {
+    btnDebug.href = '/api/debug/' + batchId;
+    debugRow.classList.remove('hidden');
+    appendLog('🐛 调试日志已生成，可下载查看每次 API 调用的完整请求/响应', 'info');
+  } else {
+    debugRow.classList.add('hidden');
+  }
+
+  if (es) { es.close(); es = null; }
+  appendLog('═══ 队列翻译全部完成 ═══', 'ok');
+}
+
+function updateBatchStatus() {
+  const jobs = Object.values(jobsMap);
+  const done = jobs.filter(j => j.status === 'done').length;
+  const failed = jobs.filter(j => j.status === 'error').length;
+  const total = jobs.length;
+  const statusText = failed > 0
+    ? `${done} / ${total} 完成 (${failed} 失败)`
+    : `${done} / ${total} 完成`;
+  document.getElementById('batch-status').textContent = statusText;
+}
+
+function renderQueue() {
+  const container = document.getElementById('queue-list');
+  const jobs = Object.entries(jobsMap);
+
+  if (jobs.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim)">队列为空</div>';
+    return;
+  }
+
+  container.innerHTML = jobs.map(([jobId, job]) => {
+    const iconMap = { pending: '⏳', translating: '⟳', done: '✓', error: '✗' };
+    const statusTextMap = {
+      pending: '等待中', translating: '翻译中…', done: '已完成', error: '失败'
+    };
+    const icon = iconMap[job.status] || '?';
+    const stText = statusTextMap[job.status] || job.status;
+    const stCls = job.status === 'translating' ? 'active' : job.status;
+
+    let actionsHtml = '';
+    if (job.status === 'done' && job.output_filename) {
+      actionsHtml = `<a class="btn-dl" href="/api/download/${encodeURIComponent(job.output_filename)}" download>📥 下载</a>`;
+    } else if (job.status === 'error') {
+      actionsHtml = `<span style="font-size:0.78rem;color:var(--error)" title="${escapeHtml(job.error || '')}">错误</span>`;
+    }
+
+    let miniProgressHtml = '';
+    if (job.status === 'translating') {
+      miniProgressHtml = '<div class="mini-progress"><div class="mini-progress-inner indeterminate"></div></div>';
+    }
+
+    return `
+      <div class="queue-item ${job.status === 'translating' ? 'active' : ''}">
+        <div class="job-icon ${job.status}">${icon}</div>
+        <div class="job-info">
+          <div class="job-name" title="${escapeHtml(job.filename)}">${escapeHtml(job.filename)}</div>
+          <div class="job-status-text ${stCls}">${stText}</div>
+          ${miniProgressHtml}
+        </div>
+        <div class="job-actions">${actionsHtml}</div>
+      </div>`;
+  }).join('');
+
+  const hasActive = jobs.some(([, j]) => j.status === 'translating');
+  const logToggle = document.getElementById('log-toggle');
+  if (hasActive || showLog) {
+    logToggle.style.display = '';
+    logToggle.textContent = showLog ? '📜 隐藏详细日志 ▴' : '📜 显示详细日志 ▾';
+  }
+}
+
+function toggleLog() {
+  showLog = !showLog;
+  const logArea = document.getElementById('log-area');
+  const logToggle = document.getElementById('log-toggle');
+  if (showLog) {
+    logArea.classList.remove('hidden');
+    logToggle.textContent = '📜 隐藏详细日志 ▴';
+  } else {
+    logArea.classList.add('hidden');
+    logToggle.textContent = '📜 显示详细日志 ▾';
+  }
+}
+
+function appendLog(msg, cls) {
+  const log = document.getElementById('log-area');
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  if (cls) div.className += ' ' + cls;
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+// 从人工标注模式跳回时自动连接进度
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var bid = params.get('batch');
+  if(bid){
+    batchId = bid;  // 直接用 URL 参数设 batchId，不依赖 SSE batch_start
+    appendLog('🎯 人工标注翻译作业: ' + bid, 'info');
+    document.getElementById('queue-card').classList.remove('hidden');
+    connectProgress(bid);
+    if(window.history && window.history.replaceState){
+      window.history.replaceState({}, '', '/');
+    }
+  }
+})();
+</script>
+</body>
+</html>

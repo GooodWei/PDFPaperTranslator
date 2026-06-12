@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人工标注 — PDFPaperTranslator</title>
+<style>
+:root{--bg:#1a1a2e;--bg-card:#16213e;--primary:#0f6bff;--text:#e0e0e0;--text-dim:#888;--border:#333;--success:#2ecc71}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:20px}
+h1{font-size:1.3rem;margin-bottom:8px}
+h2{font-size:1rem;margin-bottom:12px;color:var(--text-dim)}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:0.9rem}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.hidden{display:none!important}
+input[type=file],input[type=number],input[type=text]{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:0.85rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#preview-area{position:relative;display:inline-block;border:1px solid var(--border);max-width:100%}
+#preview-area img{display:block;max-width:100%}
+#preview-area canvas{position:absolute;top:0;left:0;cursor:crosshair}
+.page-nav{margin:12px 0}
+.region-list{list-style:none;margin-top:8px}
+.region-list li{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.85rem}
+.region-list li button{font-size:0.75rem;padding:2px 8px}
+.page-tags{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap}
+.page-tag{font-size:0.78rem;padding:3px 8px;border-radius:4px;background:var(--bg);border:1px solid var(--border)}
+.page-tag.manual{border-color:#f39c12;color:#f39c12}
+.page-tag.auto{border-color:var(--success);color:var(--success)}
+.page-tag.skip{border-color:var(--text-dim);color:var(--text-dim)}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎯 人工标注模式</h1>
+  <h2>逐页预览 PDF，框选翻译区域，指定翻译顺序</h2>
+
+  <div class="card" id="upload-card">
+    <div class="row">
+      <input type="file" id="file-input" accept=".pdf" onchange="onFileSelected(event)">
+      <button class="btn btn-primary" id="btn-upload" disabled onclick="uploadPDF()">📤 上传并开始标注</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span style="font-size:0.82rem;color:var(--text-dim)">📖 导入术语词典 (可选)</span>
+      <input type="file" id="termdict-input" accept=".json" onchange="onTermdictSelected(event)" style="font-size:0.82rem">
+      <span id="termdict-status" style="font-size:0.78rem;color:var(--success)"></span>
+    </div>
+  </div>
+
+  <div class="card hidden" id="annotate-card">
+    <div class="page-nav row">
+      <button class="btn btn-outline" onclick="prevPage()">◀ 上一页</button>
+      <span>第 <input type="number" id="page-input" value="1" min="1" style="width:60px" onchange="goToPage()"> / <span id="total-pages">0</span> 页</span>
+      <button class="btn btn-outline" onclick="nextPage()">下一页 ▶</button>
+    </div>
+    <div id="preview-area">
+      <img id="preview-img" src="" alt="页面预览" crossorigin="anonymous">
+      <canvas id="draw-canvas"></canvas>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-success" id="btn-confirm" onclick="confirmRegions()">✅ 确认选区</button>
+      <button class="btn btn-outline" onclick="autoDetectPage()">🤖 自动检测</button>
+      <button class="btn btn-outline" onclick="skipPage()">⏭ 跳过此页</button>
+      <button class="btn btn-outline" onclick="undoRegion()" id="btn-undo" disabled>↩ 撤销框选</button>
+    </div>
+    <ul class="region-list" id="region-list"></ul>
+    <div class="page-tags" id="page-tags"></div>
+  </div>
+
+  <div class="card hidden" id="submit-card">
+    <!-- 术语词典导入（编辑界面也可见） -->
+    <div class="row" style="margin-bottom:16px">
+      <span style="font-size:0.85rem;color:var(--text-dim)">📖 导入术语词典 (可选，支持 .json)</span>
+      <input type="file" id="termdict-input-2" accept=".json" onchange="onTermdictSelected2(event)" style="font-size:0.82rem">
+      <span id="termdict-status-2" style="font-size:0.78rem;color:var(--success)"></span>
+    </div>
+    <button class="btn btn-primary" id="btn-submit" onclick="submitAnnotations()" style="font-size:1rem;padding:10px 30px">
+      🚀 提交标注并开始翻译
+    </button>
+    <div style="margin-top:12px;font-size:0.85rem;color:var(--text-dim)" id="annot-summary"></div>
+  </div>
+
+  <div class="card hidden" id="result-card">
+    <div id="result-msg"></div>
+  </div>
+</div>
+
+<script>
+let _file = null, _filename = null, _totalPages = 0, _curPage = 0;
+let _pageAnnotations = {};  // {str(pageNum): {mode, regions: [{x0,y0,x1,y1,order}]}}
+let _regions = [];           // current page regions (relative coords 0-1)
+let _drawing = false, _startX = 0, _startY = 0;
+let _termdictFile = null;
+
+function onFileSelected(e){ _file = e.target.files[0]; document.getElementById('btn-upload').disabled = !_file; }
+function onTermdictSelected(e){ if(e.target.files.length>0){ _termdictFile=e.target.files[0]; document.getElementById('termdict-status').textContent='✅ '+_termdictFile.name; document.getElementById('termdict-status-2').textContent='✅ '+_termdictFile.name; } }
+function onTermdictSelected2(e){ if(e.target.files.length>0){ _termdictFile=e.target.files[0]; document.getElementById('termdict-status').textContent='✅ '+_termdictFile.name; document.getElementById('termdict-status-2').textContent='✅ '+_termdictFile.name; } }
+
+function uploadPDF(){
+  if(!_file) return;
+  let fd = new FormData(); fd.append('file', _file);
+  fetch('/api/annotated_translate', {method:'POST',body:new FormData()}).catch(()=>{});
+  // Store file to uploads via temporary route, then get page count
+  let reader = new FileReader();
+  reader.onload = function(){
+    // We can't get page count from JS alone — use a server endpoint
+    fetch('/api/config').then(r=>r.json()).then(()=>{
+      // Upload file temporarily to get pages
+      let ufd = new FormData(); ufd.append('file', _file);
+      fetch('/api/page_count', {method:'POST',body:ufd}).then(r=>r.json()).then(d=>{
+        if(d.ok){ _filename = d.filename; _totalPages = d.pages;
+          document.getElementById('total-pages').textContent = _totalPages;
+          document.getElementById('upload-card').classList.add('hidden');
+          document.getElementById('annotate-card').classList.remove('hidden');
+          document.getElementById('submit-card').classList.remove('hidden');
+          _curPage = 0; loadPage(0);
+        }
+      });
+    });
+  };
+  reader.readAsDataURL(_file);
+}
+
+// ---- Page count endpoint needed ----
+// Added in web_server.py
+
+function loadPage(pn){
+  _curPage = Math.max(0, Math.min(pn, _totalPages-1));
+  document.getElementById('page-input').value = _curPage + 1;
+  _regions = (_pageAnnotations[_curPage]||{}).regions || [];
+  let img = document.getElementById('preview-img');
+  img.src = '/api/page_preview/' + encodeURIComponent(_filename) + '/' + _curPage + '?t=' + Date.now();
+  img.onload = function(){
+    let c = document.getElementById('draw-canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.style.width = img.clientWidth + 'px'; c.style.height = img.clientHeight + 'px';
+    drawRegions();
+  };
+  updateRegionList();
+  updatePageTags();
+}
+
+function prevPage(){ if(_curPage>0) loadPage(_curPage-1); }
+function nextPage(){ if(_curPage<_totalPages-1) loadPage(_curPage+1); }
+function goToPage(){ let v = parseInt(document.getElementById('page-input').value)||1; loadPage(v-1); }
+
+// ---- Canvas drawing ----
+let c = document.getElementById('draw-canvas');
+c.addEventListener('mousedown', function(e){
+  _drawing = true;
+  let rect = c.getBoundingClientRect();
+  let scaleX = c.width / rect.width;
+  let scaleY = c.height / rect.height;
+  _startX = (e.clientX - rect.left) * scaleX;
+  _startY = (e.clientY - rect.top) * scaleY;
+});
+c.addEventListener('mousemove', function(e){
+  if(!_drawing) return;
+  let rect = c.getBoundingClientRect();
+  let scaleX = c.width / rect.width;
+  let scaleY = c.height / rect.height;
+  let cx = (e.clientX - rect.left) * scaleX, cy = (e.clientY - rect.top) * scaleY;
+  drawRegions();
+  let ctx = c.getContext('2d');
+  ctx.strokeStyle = '#f39c12'; ctx.lineWidth = 2; ctx.setLineDash([6,3]);
+  ctx.strokeRect(_startX, _startY, cx-_startX, cy-_startY);
+});
+c.addEventListener('mouseup', function(e){
+  if(!_drawing) return;
+  _drawing = false;
+  let rect = c.getBoundingClientRect();
+  let scaleX = c.width / rect.width;
+  let scaleY = c.height / rect.height;
+  let ex = (e.clientX - rect.left) * scaleX, ey = (e.clientY - rect.top) * scaleY;
+  let x0 = Math.min(_startX, ex), y0 = Math.min(_startY, ey);
+  let x1 = Math.max(_startX, ex), y1 = Math.max(_startY, ey);
+  if(x1-x0 > 5 && y1-y0 > 5){
+    _regions.push({x0: x0/c.width, y0: y0/c.height, x1: x1/c.width, y1: y1/c.height, order: _regions.length});
+    document.getElementById('btn-undo').disabled = false;
+  }
+  drawRegions(); updateRegionList();
+});
+
+function drawRegions(){
+  let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+  _regions.forEach(function(r,i){
+    ctx.strokeStyle = '#f39c12'; ctx.lineWidth = 2; ctx.setLineDash([]);
+    ctx.strokeRect(r.x0*c.width, r.y0*c.height, (r.x1-r.x0)*c.width, (r.y1-r.y0)*c.height);
+    ctx.fillStyle = 'rgba(243,156,18,0.15)';
+    ctx.fillRect(r.x0*c.width, r.y0*c.height, (r.x1-r.x0)*c.width, (r.y1-r.y0)*c.height);
+    ctx.fillStyle = '#f39c12'; ctx.font = '12px sans-serif';
+    ctx.fillText(i+1, r.x0*c.width+3, r.y0*c.height+14);
+  });
+}
+function undoRegion(){ _regions.pop(); drawRegions(); updateRegionList(); document.getElementById('btn-undo').disabled = _regions.length===0; }
+
+function updateRegionList(){
+  let el = document.getElementById('region-list');
+  el.innerHTML = _regions.map(function(r,i){
+    return '<li>🔲 区域 '+(i+1)+': ('+(r.x0*100).toFixed(0)+'%,'+(r.y0*100).toFixed(0)+'%) → ('+(r.x1*100).toFixed(0)+'%,'+(r.y1*100).toFixed(0)+'%) <button onclick="removeRegion('+i+')">✕</button></li>';
+  }).join('');
+}
+
+function removeRegion(i){ _regions.splice(i,1); _regions.forEach(function(r,idx){r.order=idx}); drawRegions(); updateRegionList(); document.getElementById('btn-undo').disabled = _regions.length===0; }
+
+function confirmRegions(){
+  if(_regions.length > 0) _pageAnnotations[_curPage] = {mode:'manual', regions: _regions.slice()};
+  else _pageAnnotations[_curPage] = {mode:'auto'};
+  updatePageTags();
+  if(_curPage < _totalPages-1) nextPage();
+}
+
+function autoDetectPage(){ _regions = []; _pageAnnotations[_curPage] = {mode:'auto'}; drawRegions(); updateRegionList(); updatePageTags(); }
+
+function skipPage(){ _regions = []; _pageAnnotations[_curPage] = {mode:'skip'}; drawRegions(); updateRegionList(); updatePageTags(); }
+
+function updatePageTags(){
+  let el = document.getElementById('page-tags');
+  let tags = [];
+  for(let p=0;p<_totalPages;p++){
+    let a = _pageAnnotations[p];
+    let mode = a ? a.mode : 'auto';
+    let cls = mode==='manual'?'manual':(mode==='skip'?'skip':'auto');
+    let label = mode==='manual'?'✏️ 第'+(p+1)+'页: 手动('+(a.regions||[]).length+'区)':(mode==='skip'?'⏭ 第'+(p+1)+'页: 跳过':'🤖 第'+(p+1)+'页: 自动');
+    tags.push('<span class="page-tag '+cls+'">'+label+'</span>');
+  }
+  el.innerHTML = tags.join(' ');
+  // Summary
+  let manual=0,auto=0,skip=0;
+  for(let p=0;p<_totalPages;p++){
+    let m = (_pageAnnotations[p]||{}).mode || 'auto';
+    if(m==='manual')manual++; else if(m==='skip')skip++; else auto++;
+  }
+  document.getElementById('annot-summary').textContent = '手动 '+manual+' 页 | 自动 '+auto+' 页 | 跳过 '+skip+' 页';
+}
+
+function submitAnnotations(){
+  if(!_termdictFile && !confirm('⚠️ 未导入术语词典。\n\n没有术语词典可能导致专业术语翻译不一致。\n\n是否继续提交？（点击"取消"可返回导入词典）')) {
+    return;
+  }
+  document.getElementById('btn-submit').disabled = true;
+  document.getElementById('btn-submit').textContent = '提交中...';
+  let fd = new FormData(); fd.append('file', _file);
+  fd.append('page_annotations', JSON.stringify(_pageAnnotations));
+  if(_termdictFile) fd.append('termdict', _termdictFile);
+  fd.append('source_lang', 'en'); fd.append('target_lang', 'zh');
+  fetch('/api/annotated_translate', {method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      window.location.href = '/?batch=' + d.batch_id;
+    } else {
+      alert('提交失败: '+(d.error||'未知错误'));
+      document.getElementById('btn-submit').disabled = false;
+      document.getElementById('btn-submit').textContent = '🚀 提交标注并开始翻译';
+    }
+  });
+}
+</script>
+</body>
+</html>
